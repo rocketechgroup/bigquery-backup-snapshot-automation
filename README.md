@@ -50,7 +50,7 @@ tables passed from the scan. This is very powerful because backups of all tables
 speeds up the backup process.
 
 Error handling in this part is important because failing for a bad reason could result in retrying for a very long
-period of time and could lead to unexpected behaviours.
+period of time and could lead to unexpected behaviours. The version of the code is designed to be idempotent.
 
 ### Deploy the cloud function
 
