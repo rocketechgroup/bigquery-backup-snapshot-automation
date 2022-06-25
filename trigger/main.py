@@ -118,9 +118,17 @@ def backup_table(event, context):
             f"to {message['target_project_id']}.{message['target_project_id']}.{message['target_table_id']}"
         )
     except api_core_exceptions.BadRequest as e:
+
         if 'Already Exists' in e.message:
+            """
+            Target backup snapshot already exists
+            """
             logging.warning(e.message)
-        if 'Access Denied' in e.message:
+        elif 'Access Denied' in e.message:
+            """
+            The overwrite behaviour will try to remove the snapshot, 
+            but permission isn't given because it's dangerous, so ignore is the correct behaviour
+            """
             logging.warning(e.message)
         else:
             raise e

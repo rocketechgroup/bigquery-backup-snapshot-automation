@@ -12,6 +12,7 @@ LOCATION = os.environ.get('LOCATION', 'EU')
 PROJECTS_TO_SCAN = os.environ.get('PROJECTS_TO_SCAN', [])
 BACKUP_PROJECT_ID = os.environ.get('BACKUP_PROJECT_ID')
 TOPIC_ID = os.environ.get('TOPIC_ID')
+SCAN_REGION = os.environ.get('SCAN_REGION', 'region-eu')
 
 logging.basicConfig()
 logging.getLogger().setLevel(logging.INFO)
@@ -32,7 +33,7 @@ batch_settings = pubsub_v1.types.BatchSettings(
 
 publisher_options = pubsub_v1.types.PublisherOptions(
     flow_control=pubsub_v1.types.PublishFlowControl(
-        message_limit=500,
+        message_limit=30,  # Because BigQuery Quota only allows up to 50 concurrent snapshot queries to be executed
         byte_limit=2 * 1024 * 1024,
         limit_exceeded_behavior=pubsub_v1.types.LimitExceededBehavior.BLOCK,
     ),
@@ -49,13 +50,34 @@ def get_client():
     return bigquery.Client(project=PROJECT_ID, location=LOCATION)
 
 
-def scan_and_send_to_pubsub():
+def scan_and_send_to_pubsub(event, context):
+    """Background Cloud Function to be triggered by Pub/Sub.
+            Args:
+                 event (dict):  The dictionary with data specific to this type of
+                                event. The `@type` field maps to
+                                 `type.googleapis.com/google.pubsub.v1.PubsubMessage`.
+                                The `data` field maps to the PubsubMessage data
+                                in a base64-encoded string. The `attributes` field maps
+                                to the PubsubMessage attributes if any is present.
+                 context (google.cloud.functions.Context): Metadata of triggering event
+                                including `event_id` which maps to the PubsubMessage
+                                messageId, `timestamp` which maps to the PubsubMessage
+                                publishTime, `event_type` which maps to
+                                `google.pubsub.topic.publish`, and `resource` which is
+                                a dictionary that describes the service API endpoint
+                                pubsub.googleapis.com, the triggering topic's name, and
+                                the triggering event type
+                                `type.googleapis.com/google.pubsub.v1.PubsubMessage`.
+            Returns:
+                None. The output is written to Cloud Logging.
+            """
+
     client = get_client()
     publish_futures = []
     for project_to_scan in projects_to_scan:
         find_all_tables = f"""
             SELECT table_catalog as project_id, table_schema as dataset_id, table_name as table_id
-            FROM `{project_to_scan}.region-eu.INFORMATION_SCHEMA.TABLES`
+            FROM `{project_to_scan}.{SCAN_REGION}.INFORMATION_SCHEMA.TABLES`
             WHERE table_type = 'BASE TABLE'
         """
         query_job_find_all_tables = client.query(find_all_tables)
@@ -83,4 +105,4 @@ def scan_and_send_to_pubsub():
 
 
 if __name__ == '__main__':
-    scan_and_send_to_pubsub()
+    scan_and_send_to_pubsub(None, None)
