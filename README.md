@@ -66,3 +66,6 @@ gcloud functions deploy backup_table \
 --set-env-vars PROJECT_ID=${PROJECT_ID} \
 --retry
 ```
+
+## Restore the table
+Very straight forward, see [docs here](https://cloud.google.com/bigquery/docs/table-snapshots-restore#sql)
