@@ -39,6 +39,7 @@ gcloud functions deploy scan_and_send_to_pubsub \
 --runtime python38 \
 --region europe-west2 \
 --trigger-topic scheduled_scan_for_backup \
+--ingress-settings internal-only \
 --set-env-vars PROJECT_ID=${PROJECT_ID},BACKUP_PROJECT_ID=${BACKUP_PROJECT_ID},PROJECTS_TO_SCAN=${PROJECTS_TO_SCAN},TOPIC_ID=${TOPIC_ID}
 ```
 
@@ -63,6 +64,7 @@ gcloud functions deploy backup_table \
 --runtime python38 \
 --region europe-west2 \
 --trigger-topic tables_to_be_backedup \
+--ingress-settings internal-only \
 --set-env-vars PROJECT_ID=${PROJECT_ID} \
 --retry
 ```
